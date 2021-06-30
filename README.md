@@ -5,7 +5,7 @@ Usage:
 python move_util.py --operation move --FROM /home/user/projects --TO /root/ --threads 4
 ```
 
-Short usage:
+Usage (short method):
 ```
 python move_util.py -o move -f /home/user/projects -t /root/ -thr 4
 ```
