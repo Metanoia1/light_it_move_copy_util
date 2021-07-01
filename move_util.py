@@ -24,13 +24,6 @@ class FileManager(threading.Thread):
         self.start()
 
 
-def get_threads_int(threads_arg: int, from_args: list) -> int:
-    if not threads_arg or threads_arg < 1:
-        return 1
-    len_from_args = len(from_args)
-    return threads_arg if threads_arg <= len_from_args else len_from_args
-
-
 def get_thread(threads_amount):
     if FileManager.count < threads_amount:
         return FileManager()
@@ -55,11 +48,10 @@ def main():
     parser.add_argument("-t", "--TO")
     parser.add_argument("-thr", "--threads", type=int)
     args = parser.parse_args()
-    threads_amount = get_threads_int(args.threads, args.FROM)
 
     if args.operation == "move":
         for arg in args.FROM:
-            move_files(arg, args.TO, threads_amount)
+            move_files(arg, args.TO, args.threads)
 
 
 if __name__ == "__main__":
