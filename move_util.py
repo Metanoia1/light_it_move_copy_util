@@ -2,25 +2,26 @@ import os
 import shutil
 import threading
 from argparse import ArgumentParser
-from threading import Thread
 
 
-class FileManager(Thread):
+class FileManager(threading.Thread):
 
-    count = 0
+    count = 1
 
-    def __init__(self, from_, to_):
+    def __init__(self, from_=None, to_=None):
         super().__init__()
         self.__class__.count += 1
         self.from_ = from_
         self.to_ = to_
 
     def run(self):
-        try:
-            shutil.move(self.from_, self.to_)
-        except FileNotFoundError:
-            pass
+        shutil.move(self.from_, self.to_)
         self.__class__.count -= 1
+
+    def __call__(self, from_, to_):
+        self.from_ = from_
+        self.to_ = to_
+        self.start()
 
 
 def get_threads_int(threads_arg: int, from_args: list) -> int:
@@ -30,19 +31,21 @@ def get_threads_int(threads_arg: int, from_args: list) -> int:
     return threads_arg if threads_arg <= len_from_args else len_from_args
 
 
-def move_files(from_, to_, threads_amount=1):
-    print(threading.active_count())
-    thread = FileManager(from_, to_)
-    files_list = []
+def get_thread(threads_amount):
+    if FileManager.count < threads_amount:
+        return FileManager()
+    return shutil.move
 
+
+def move_files(from_, to_, threads_amount=1):
+    thread = get_thread(threads_amount)
     try:
         files_list = os.listdir(from_)
-        thread.start()
+        thread(from_, to_)
+        for file_name in files_list:
+            move_files(f"{from_}/{file_name}", to_, threads_amount)
     except NotADirectoryError:
-        thread.start()
-
-    for file_name in files_list:
-        move_files(f"{from_}/{file_name}", to_, threads_amount)
+        thread(from_, to_)
 
 
 def main():
