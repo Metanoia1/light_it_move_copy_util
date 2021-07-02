@@ -16,7 +16,11 @@ class FileManager(threading.Thread):
         self.to_ = to_
 
     def run(self):
-        shutil.move(self.from_, self.to_)
+        try:
+            shutil.move(self.from_, self.to_)
+        except FileNotFoundError:
+            pass
+
         self.__class__.count -= 1
 
     def __call__(self, from_, to_):
@@ -26,6 +30,7 @@ class FileManager(threading.Thread):
 
 
 def get_thread(threads_amount: int):
+    print(threading.active_count())
     if FileManager.count < threads_amount:
         return FileManager()
     return shutil.move
@@ -39,7 +44,10 @@ def move_files(from_: str, to_: str, threads_amount=1) -> None:
         thread(from_, to_)
 
         for file_name in files_list:
-            move_files(f"{from_}/{file_name}", to_, threads_amount)
+            try:
+                move_files(f"{from_}/{file_name}", to_, threads_amount)
+            except FileNotFoundError:
+                pass
 
     except NotADirectoryError:
         thread(from_, to_)
