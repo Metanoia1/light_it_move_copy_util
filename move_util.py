@@ -46,8 +46,11 @@ class FileManager(metaclass=ABCMeta):
         self.to_ = None
 
     @abstractmethod
-    def main(self, from_: str, to_: str) -> None:
-        """Moving or Copying files logic implementation"""
+    def main(self, from_: str, to_: str) -> int:
+        """Moving or Copying files logic implementation
+
+        Returns threads amount that was running (int)
+        """
 
     @abstractmethod
     def run_main(self, from_: List[str], to_: str, threads_amount=1) -> None:
@@ -61,7 +64,7 @@ class FileMover(FileManager):
     def _get_thread(self) -> Callable:
         threads_running = self._thread_class.count
         threads_amount = self._threads_amount
-        if threads_running <= threads_amount and threads_amount != 1:
+        if threads_running < threads_amount and threads_amount != 1:
             return self._thread_class()
         return self._func
 
@@ -72,7 +75,7 @@ class FileMover(FileManager):
         else:
             thread(from_, to_)
 
-    def main(self, from_: str, to_: str) -> None:
+    def main(self, from_: str, to_: str) -> int:
         """Moving files logic implementation method"""
         thread = self._get_thread()
 
@@ -89,12 +92,18 @@ class FileMover(FileManager):
         except NotADirectoryError:
             self._run_thread(from_, to_, thread)
 
+        if not MovingFilesThread.count:
+            return 1
+        return MovingFilesThread.count
+
     def run_main(self, from_: List[str], to_: str, threads_amount=1) -> None:
         self.from_ = from_
         self.to_ = to_
         self._threads_amount = threads_amount
+        running_threads_num = None
         for arg in self.from_:
-            self.main(arg, self.to_)
+            running_threads_num = self.main(arg, self.to_)
+        print("Threads amount that was running at once: ", running_threads_num)
 
 
 def get_threads_amount(arg_threads: int) -> int:
@@ -108,9 +117,9 @@ def main() -> None:
     """Parses the arguments from the command line and runs this utility"""
     parser = ArgumentParser()
     parser.add_argument("-o", "--operation", help="use with `move` argument")
-    parser.add_argument("-f", "--FROM", nargs="*")
-    parser.add_argument("-t", "--TO")
-    parser.add_argument("-thr", "--threads", type=int)
+    parser.add_argument("-f", "--FROM", nargs="*", help="path `from`")
+    parser.add_argument("-t", "--TO", help="path `to`")
+    parser.add_argument("-thr", "--threads", type=int, help="threads amount")
     args = parser.parse_args()
     threads_amount = get_threads_amount(args.threads)
 
