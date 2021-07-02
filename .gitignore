@@ -2,3 +2,4 @@ __pycache__/
 A/
 B/
 setup.cfg
+create_test_folders.sh
