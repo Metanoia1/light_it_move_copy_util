@@ -30,8 +30,7 @@ class FileManager(threading.Thread):
 
 
 def get_thread(threads_amount: int):
-    print(threading.active_count())
-    if FileManager.count < threads_amount:
+    if FileManager.count <= threads_amount:
         return FileManager()
     return shutil.move
 
