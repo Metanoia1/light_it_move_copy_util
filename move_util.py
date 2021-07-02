@@ -8,7 +8,7 @@ from collections.abc import Callable
 from abc import ABCMeta, abstractmethod
 
 
-class FileMovingThread(Thread):
+class MovingFilesThread(Thread):
 
     """This class implements moving files thread"""
 
@@ -115,7 +115,7 @@ def main() -> None:
     threads_amount = get_threads_amount(args.threads)
 
     if args.operation == "move":
-        mover = FileMover(FileMovingThread, shutil.move)
+        mover = FileMover(MovingFilesThread, shutil.move)
         mover.run_main(args.FROM, args.TO, threads_amount)
 
 
