@@ -36,7 +36,7 @@ class MovingFilesThread(Thread):
 
 class FileManager(metaclass=ABCMeta):
 
-    """Interface class"""
+    """Interface class for Moving or Copying files utility"""
 
     def __init__(self, thread_class: Thread, func: Callable) -> None:
         self._thread_class = thread_class
@@ -92,9 +92,9 @@ class FileMover(FileManager):
         except NotADirectoryError:
             self._run_thread(from_, to_, thread)
 
-        if not MovingFilesThread.count:
+        if not self._thread_class.count:
             return 1
-        return MovingFilesThread.count
+        return self._thread_class.count
 
     def run_main(self, from_: List[str], to_: str, threads_amount=1) -> None:
         self.from_ = from_
