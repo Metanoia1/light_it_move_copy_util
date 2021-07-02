@@ -12,6 +12,3 @@ python move_util.py -o move -f /home/user/projects -t /root/ -thr 4
 ```
 python move_util.py -o move -f /home/user/projects/*.md -t /root/ -thr 4
 ```
-```
-python move_util.py --o move -f /home/user/projects/*.md -t /root/ -thr 4
-```

@@ -1,3 +1,4 @@
+"""Moving files command-line utility"""
 import os
 import shutil
 from typing import List
@@ -7,7 +8,9 @@ from collections.abc import Callable
 from abc import ABCMeta, abstractmethod
 
 
-class MoveFileThread(Thread):
+class FileMovingThread(Thread):
+
+    """This class implements moving files thread"""
 
     count = 0
 
@@ -32,9 +35,19 @@ class MoveFileThread(Thread):
 
 
 class FileManager(metaclass=ABCMeta):
+
+    """Interface class"""
+
+    def __init__(self, thread_class: Thread, func: Callable) -> None:
+        self._thread_class = thread_class
+        self._func = func
+        self._threads_amount = 1
+        self.from_ = None
+        self.to_ = None
+
     @abstractmethod
     def main(self, from_: str, to_: str) -> None:
-        """Move or Copy logic implementation"""
+        """Moving or Copying files logic implementation"""
 
     @abstractmethod
     def run_main(self, from_: List[str], to_: str, threads_amount=1) -> None:
@@ -42,12 +55,8 @@ class FileManager(metaclass=ABCMeta):
 
 
 class FileMover(FileManager):
-    def __init__(self, thread_class: Thread, func: Callable) -> None:
-        self.from_ = None
-        self.to_ = None
-        self._threads_amount = 1
-        self._thread_class = thread_class
-        self._func = func
+
+    """This class implements moving files logic"""
 
     def _get_thread(self) -> Callable:
         threads_running = self._thread_class.count
@@ -64,6 +73,7 @@ class FileMover(FileManager):
             thread(from_, to_)
 
     def main(self, from_: str, to_: str) -> None:
+        """Moving files logic implementation method"""
         thread = self._get_thread()
 
         try:
@@ -88,12 +98,14 @@ class FileMover(FileManager):
 
 
 def get_threads_amount(arg_threads: int) -> int:
+    """Returns threads amount number"""
     if arg_threads:
         return max(arg_threads, 1)
     return 1
 
 
 def main() -> None:
+    """Parses the arguments from the command line and runs this utility"""
     parser = ArgumentParser()
     parser.add_argument("-o", "--operation", help="use with `move` argument")
     parser.add_argument("-f", "--FROM", nargs="*")
@@ -103,7 +115,7 @@ def main() -> None:
     threads_amount = get_threads_amount(args.threads)
 
     if args.operation == "move":
-        mover = FileMover(MoveFileThread, shutil.move)
+        mover = FileMover(FileMovingThread, shutil.move)
         mover.run_main(args.FROM, args.TO, threads_amount)
 
 
