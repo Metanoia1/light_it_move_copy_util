@@ -4,7 +4,6 @@ import shutil
 from typing import List
 from threading import Thread
 from argparse import ArgumentParser
-from collections.abc import Callable
 from abc import ABCMeta, abstractmethod
 
 
@@ -38,7 +37,7 @@ class FileManager(metaclass=ABCMeta):
 
     """Interface class for Moving or Copying files utility"""
 
-    def __init__(self, thread_class: Thread, func: Callable) -> None:
+    def __init__(self, thread_class, func):
         self._thread_class = thread_class
         self._func = func
         self._threads_amount = 1
@@ -61,14 +60,14 @@ class FileMover(FileManager):
 
     """This class implements moving files logic"""
 
-    def _get_thread(self) -> Callable:
+    def _get_thread(self):
         threads_running = self._thread_class.count
         threads_amount = self._threads_amount
         if threads_running < threads_amount and threads_amount != 1:
             return self._thread_class()
         return self._func
 
-    def _run_thread(self, from_: str, to_: str, thread: Thread) -> None:
+    def _run_thread(self, from_, to_, thread):
         if isinstance(thread, self._thread_class):
             thread(from_, to_)
             thread.join()
