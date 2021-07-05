@@ -41,7 +41,6 @@ class FileManager(metaclass=ABCMeta):
         self._func = func
         self._threads_amount = 1
         self.from_ = None
-        self.to_ = None
 
     @abstractmethod
     def main(self, from_: str, to_: str) -> None:
@@ -63,35 +62,28 @@ class FileMover(FileManager):
             return self._thread_class()
         return self._func
 
-    def _run_thread(self, from_, to_, thread):
-        if isinstance(thread, self._thread_class):
-            thread(from_, to_)
-        else:
-            thread(from_, to_)
-
     def main(self, from_: str, to_: str) -> None:
         """Moving files logic implementation method"""
         thread = self._get_thread()
 
         try:
             files_list = os.listdir(from_)
-            self._run_thread(from_, to_, thread)
+            thread(from_, to_)
 
             for file_name in files_list:
                 try:
-                    self.main(f"{self.from_}/{file_name}", self.to_)
+                    self.main(f"{self.from_}/{file_name}", to_)
                 except FileNotFoundError:
                     pass
 
         except NotADirectoryError:
-            self._run_thread(from_, to_, thread)
+            thread(from_, to_)
 
     def run_main(self, from_: List[str], to_: str, threads_amount=1) -> None:
         self.from_ = from_
-        self.to_ = to_
         self._threads_amount = threads_amount
-        for arg in self.from_:
-            self.main(arg, self.to_)
+        for arg in from_:
+            self.main(arg, to_)
 
 
 def get_threads_amount(arg_threads: int) -> int:
