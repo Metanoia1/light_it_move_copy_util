@@ -15,17 +15,16 @@ class MovingFilesThread(Thread):
 
     def __init__(self, from_=None, to_=None) -> None:
         super().__init__()
-        self.__class__.count += 1
         self.from_ = from_
         self.to_ = to_
 
     def run(self) -> None:
+        self.__class__.count += 1
         try:
             shutil.move(self.from_, self.to_)
+            self.__class__.count -= 1
         except FileNotFoundError:
-            pass
-
-        self.__class__.count -= 1
+            self.__class__.count -= 1
 
     def __call__(self, from_: str, to_: str) -> None:
         self.from_ = from_
@@ -45,11 +44,8 @@ class FileManager(metaclass=ABCMeta):
         self.to_ = None
 
     @abstractmethod
-    def main(self, from_: str, to_: str) -> int:
-        """Moving or Copying files logic implementation
-
-        Returns threads amount that was running (int)
-        """
+    def main(self, from_: str, to_: str) -> None:
+        """Moving or Copying files logic implementation"""
 
     @abstractmethod
     def run_main(self, from_: List[str], to_: str, threads_amount=1) -> None:
@@ -70,11 +66,10 @@ class FileMover(FileManager):
     def _run_thread(self, from_, to_, thread):
         if isinstance(thread, self._thread_class):
             thread(from_, to_)
-            thread.join()
         else:
             thread(from_, to_)
 
-    def main(self, from_: str, to_: str) -> int:
+    def main(self, from_: str, to_: str) -> None:
         """Moving files logic implementation method"""
         thread = self._get_thread()
 
@@ -91,18 +86,12 @@ class FileMover(FileManager):
         except NotADirectoryError:
             self._run_thread(from_, to_, thread)
 
-        if not self._thread_class.count:
-            return 1
-        return self._thread_class.count
-
     def run_main(self, from_: List[str], to_: str, threads_amount=1) -> None:
         self.from_ = from_
         self.to_ = to_
         self._threads_amount = threads_amount
-        running_threads_num = None
         for arg in self.from_:
-            running_threads_num = self.main(arg, self.to_)
-        print("Threads amount that was running at once: ", running_threads_num)
+            self.main(arg, self.to_)
 
 
 def get_threads_amount(arg_threads: int) -> int:
