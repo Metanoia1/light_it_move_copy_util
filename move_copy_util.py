@@ -1,30 +1,28 @@
-"""Moving files command-line utility"""
+"""Moving or Copying files command-line utility"""
 import os
 import shutil
+import threading
 from typing import List
-from threading import Thread
 from argparse import ArgumentParser
 from abc import ABCMeta, abstractmethod
 
 
-class MovingFilesThread(Thread):
+class MovingCopyingThread(threading.Thread):
 
-    """This class implements moving files thread"""
+    """This class implements moving or copying files thread"""
 
-    count = 0
-
-    def __init__(self, from_=None, to_=None) -> None:
+    def __init__(self, func, from_=None, to_=None) -> None:
         super().__init__()
+        self._func = func
         self.from_ = from_
         self.to_ = to_
 
     def run(self) -> None:
-        self.__class__.count += 1
         try:
-            shutil.move(self.from_, self.to_)
-            self.__class__.count -= 1
+            print(self.from_)
+            self._func(self.from_, self.to_)
         except FileNotFoundError:
-            self.__class__.count -= 1
+            pass
 
     def __call__(self, from_: str, to_: str) -> None:
         self.from_ = from_
@@ -32,7 +30,7 @@ class MovingFilesThread(Thread):
         self.start()
 
 
-class FileManager(metaclass=ABCMeta):
+class FileManagerInterface(metaclass=ABCMeta):
 
     """Interface class for Moving or Copying files utility"""
 
@@ -40,10 +38,9 @@ class FileManager(metaclass=ABCMeta):
         self._thread_class = thread_class
         self._func = func
         self._threads_amount = 1
-        self.from_ = None
 
     @abstractmethod
-    def main(self, from_: str, to_: str) -> None:
+    def main(self, from_: str, to_: str, init_to_value: str) -> None:
         """Moving or Copying files logic implementation"""
 
     @abstractmethod
@@ -51,42 +48,39 @@ class FileManager(metaclass=ABCMeta):
         """The self.main running method"""
 
 
-class FileMover(FileManager):
+class FileManager(FileManagerInterface):
 
-    """This class implements moving files logic"""
+    """Moving or Copying files logic implementation class"""
 
     def _get_thread(self):
-        threads_running = self._thread_class.count
-        threads_amount = self._threads_amount
-        if threads_running < threads_amount and threads_amount != 1:
-            return self._thread_class()
+        if threading.active_count() < self._threads_amount:
+            return self._thread_class(self._func)
         return self._func
 
-    def main(self, from_: str, to_: str) -> None:
-        """Moving files logic implementation method"""
-        thread = self._get_thread()
-
+    def main(self, from_: str, to_: str, init_to_value: str) -> None:
         try:
             files_list = os.listdir(from_)
-            thread(from_, to_)
+            to_ = f"{init_to_value}/{from_[from_.find('/'):]}"
+            os.makedirs(to_)
 
             for file_name in files_list:
                 try:
-                    self.main(f"{self.from_}/{file_name}", to_)
+                    self.main(f"{from_}/{file_name}", to_, init_to_value)
                 except FileNotFoundError:
                     pass
 
         except NotADirectoryError:
+            thread = self._get_thread()
             thread(from_, to_)
 
     def run_main(self, from_: List[str], to_: str, threads_amount=1) -> None:
-        self.from_ = from_
         self._threads_amount = threads_amount
+        os.makedirs(to_)
         for arg in from_:
-            self.main(arg, to_)
+            self.main(arg, to_, to_)
 
 
-def get_threads_amount(arg_threads: int) -> int:
+def _get_threads_amount(arg_threads: int) -> int:
     """Returns threads amount number"""
     if arg_threads:
         return max(arg_threads, 1)
@@ -101,11 +95,14 @@ def main() -> None:
     parser.add_argument("-t", "--TO", help="path `to`")
     parser.add_argument("-thr", "--threads", type=int, help="threads amount")
     args = parser.parse_args()
-    threads_amount = get_threads_amount(args.threads)
+    threads_amount = _get_threads_amount(args.threads)
 
     if args.operation == "move":
-        mover = FileMover(MovingFilesThread, shutil.move)
+        mover = FileManager(MovingCopyingThread, shutil.move)
         mover.run_main(args.FROM, args.TO, threads_amount)
+    elif args.operation == "copy":
+        copier = FileManager(MovingCopyingThread, shutil.copy)
+        copier.run_main(args.FROM, args.TO, threads_amount)
 
 
 if __name__ == "__main__":

@@ -2,13 +2,13 @@
 
 Usage:
 ```
-python move_util.py --operation move --FROM /home/user/projects --TO /root/ --threads 4
+python move_copy_util.py --operation move|copy --FROM /home/user/projects --TO /root/ --threads 10
 ```
 
 Usage (short method):
 ```
-python move_util.py -o move -f /home/user/projects -t /root/ -thr 4
+python move_copy_util.py -o move|copy -f /home/user/projects -t /root/ -thr 10 
 ```
 ```
-python move_util.py -o move -f /home/user/projects/*.md -t /root/ -thr 4
+python move_copy_util.py -o move|copy -f /home/user/projects/*.md -t /root/ -thr 10
 ```
