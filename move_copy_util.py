@@ -19,7 +19,7 @@ class MovingCopyingThread(threading.Thread):
 
     def run(self) -> None:
         try:
-            print(self.from_)
+            print(threading.active_count(), self.from_)
             self._func(self.from_, self.to_)
         except FileNotFoundError:
             pass
@@ -53,11 +53,19 @@ class FileManager(FileManagerInterface):
     """Moving or Copying files logic implementation class"""
 
     def _get_thread(self):
+        if self._threads_amount <= 1:
+            return self._func
+
         if threading.active_count() < self._threads_amount:
             return self._thread_class(self._func)
-        return self._func
+
+        return None
 
     def main(self, from_: str, to_: str, init_to_value: str) -> None:
+        thread = self._get_thread()
+        while not thread:
+            thread = self._get_thread()
+
         try:
             files_list = os.listdir(from_)
             to_ = f"{init_to_value}/{from_[from_.find('/'):]}"
@@ -70,7 +78,6 @@ class FileManager(FileManagerInterface):
                     pass
 
         except NotADirectoryError:
-            thread = self._get_thread()
             thread(from_, to_)
 
     def run_main(self, from_: List[str], to_: str, threads_amount=1) -> None:
