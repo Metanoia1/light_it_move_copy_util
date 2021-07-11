@@ -44,7 +44,9 @@ class FileManagerInterface(metaclass=ABCMeta):
         """Moving or Copying files logic implementation"""
 
     @abstractmethod
-    def run_main(self, from_: List[str], to_: str, threads_amount=1) -> None:
+    def run_main(
+        self, from_: List[str], to_: str, threads_amount=1, operation=None
+    ) -> None:
         """The self.main running method"""
 
 
@@ -69,7 +71,11 @@ class FileManager(FileManagerInterface):
         try:
             files_list = os.listdir(from_)
             to_ = f"{init_to_value}/{from_[from_.find('/'):]}"
-            os.makedirs(to_)
+
+            try:
+                os.makedirs(to_)
+            except FileExistsError:
+                pass
 
             for file_name in files_list:
                 try:
@@ -80,11 +86,25 @@ class FileManager(FileManagerInterface):
         except NotADirectoryError:
             thread(from_, to_)
 
-    def run_main(self, from_: List[str], to_: str, threads_amount=1) -> None:
+    def run_main(
+        self, from_: List[str], to_: str, threads_amount=1, operation=None
+    ) -> None:
         self._threads_amount = threads_amount
-        os.makedirs(to_)
+
+        try:
+            os.makedirs(to_)
+        except FileExistsError:
+            pass
+
         for arg in from_:
             self.main(arg, to_, to_)
+
+        if operation == "move":
+            for arg in from_:
+                try:
+                    shutil.rmtree(arg)
+                except (NotADirectoryError, FileNotFoundError):
+                    pass
 
 
 def _get_threads_amount(arg_threads: int) -> int:
@@ -103,13 +123,14 @@ def main() -> None:
     parser.add_argument("-thr", "--threads", type=int, help="threads amount")
     args = parser.parse_args()
     threads_amount = _get_threads_amount(args.threads)
+    operation = args.operation
 
-    if args.operation == "move":
+    if operation == "move":
         mover = FileManager(MovingCopyingThread, shutil.move)
-        mover.run_main(args.FROM, args.TO, threads_amount)
-    elif args.operation == "copy":
+        mover.run_main(args.FROM, args.TO, threads_amount, operation)
+    elif operation == "copy":
         copier = FileManager(MovingCopyingThread, shutil.copy)
-        copier.run_main(args.FROM, args.TO, threads_amount)
+        copier.run_main(args.FROM, args.TO, threads_amount, operation)
 
 
 if __name__ == "__main__":
