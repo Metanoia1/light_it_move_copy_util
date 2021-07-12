@@ -1,5 +1,6 @@
 """Moving or Copying files command-line utility"""
 import os
+import sys
 import shutil
 import threading
 import logging
@@ -8,7 +9,7 @@ from argparse import ArgumentParser
 from abc import ABCMeta, abstractmethod
 
 
-logging.basicConfig(filename="logs.log", level=logging.DEBUG)
+logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
 
 class MovingCopyingThread(threading.Thread):
@@ -23,10 +24,10 @@ class MovingCopyingThread(threading.Thread):
 
     def run(self) -> None:
         try:
-            logging.info("[%s] %s", threading.active_count(), self.from_)
+            logging.info("thrs [%s]: %s", threading.active_count(), self.from_)
             self._func(self.from_, self.to_)
-        except FileNotFoundError:
-            pass
+        except (FileNotFoundError, PermissionError) as error:
+            logging.error("in MovingCopyingThread: %s", error)
 
     def __call__(self, from_: str, to_: str) -> None:
         self.from_ = from_
@@ -129,12 +130,15 @@ def main() -> None:
     threads_amount = _get_threads_amount(args.threads)
     operation = args.operation
 
-    if operation == "move":
-        mover = FileManager(MovingCopyingThread, shutil.move)
-        mover.run_main(args.FROM, args.TO, threads_amount, operation)
-    elif operation == "copy":
-        copier = FileManager(MovingCopyingThread, shutil.copy)
-        copier.run_main(args.FROM, args.TO, threads_amount, operation)
+    try:
+        if operation == "move":
+            mover = FileManager(MovingCopyingThread, shutil.move)
+            mover.run_main(args.FROM, args.TO, threads_amount, operation)
+        elif operation == "copy":
+            copier = FileManager(MovingCopyingThread, shutil.copy)
+            copier.run_main(args.FROM, args.TO, threads_amount, operation)
+    except FileNotFoundError as error:
+        logging.error("in main: %s", error)
 
 
 if __name__ == "__main__":
