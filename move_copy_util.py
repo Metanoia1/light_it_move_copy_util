@@ -2,9 +2,13 @@
 import os
 import shutil
 import threading
+import logging
 from typing import List
 from argparse import ArgumentParser
 from abc import ABCMeta, abstractmethod
+
+
+logging.basicConfig(filename="logs.log", level=logging.DEBUG)
 
 
 class MovingCopyingThread(threading.Thread):
@@ -19,7 +23,7 @@ class MovingCopyingThread(threading.Thread):
 
     def run(self) -> None:
         try:
-            print(threading.active_count(), self.from_)
+            logging.info("[%s] %s", threading.active_count(), self.from_)
             self._func(self.from_, self.to_)
         except FileNotFoundError:
             pass
